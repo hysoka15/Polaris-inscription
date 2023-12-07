@@ -31,6 +31,8 @@ import { handleAddress, handleLog } from "@/utils/helper";
 const example =
   'data:,{"p":"asc-20","op":"mint","tick":"aval","amt":"100000000"}';
 
+const exampleHex = "0x646174613a2c7b2270223a226273632d3230222c226f70223a226d696e74222c227469636b223a2262736369222c22616d74223a2231303030227d";
+
 type RadioType = "meToMe" | "manyToOne";
 
 export default function Home() {
@@ -40,6 +42,7 @@ export default function Home() {
   const [toAddress, setToAddress] = useState<Hex>();
   const [rpc, setRpc] = useState<string>();
   const [inscription, setInscription] = useState<string>("");
+  const [inscriptionHex, setInscriptionHex] = useState<string>("");
   const [gas, setGas] = useState<number>(0);
   const [running, setRunning] = useState<boolean>(false);
   const [delay, setDelay] = useState<number>(1000);
@@ -58,6 +61,7 @@ export default function Home() {
 
   useInterval(
     async () => {
+      const hexTransactionData = inscriptionHex ? (inscriptionHex as `0x${string}`) : stringToHex(inscription);
       const results = await Promise.allSettled(
         accounts.map((account) => {
           return client.sendTransaction({
@@ -65,7 +69,7 @@ export default function Home() {
             to: radio === "meToMe" ? account.address : toAddress,
             maxPriorityFeePerGas: parseEther(gas.toString(), "gwei"),
             value: 0n,
-            data: stringToHex(inscription),
+            data: hexTransactionData,
           });
         }),
       );
@@ -104,7 +108,7 @@ export default function Home() {
       return;
     }
 
-    if (!inscription) {
+    if (!inscription && !inscriptionHex) {
       setLogs((logs) => [handleLog("没有铭文", "error"), ...logs]);
       setRunning(false);
       return;
@@ -211,6 +215,19 @@ export default function Home() {
           onChange={(e) => {
             const text = e.target.value;
             setInscription(text.trim());
+          }}
+        />
+      </div>
+
+      <div className=" flex flex-col gap-2">
+        <span>十六进制（选填，知道十六进制的直接填，优先十六进制）:</span>
+        <TextField
+          size="small"
+          placeholder={`十六进制，例子：\n${exampleHex}`}
+          disabled={running}
+          onChange={(e) => {
+            const text = e.target.value;
+            setInscriptionHex(text.trim());
           }}
         />
       </div>
